@@ -22,6 +22,33 @@ function findNearestCity(lat: number, lon: number): CityOption {
   return nearest;
 }
 
+const DEFAULT_CITY = ALL_CITIES.find(c => c.name === "New York") || ALL_CITIES[0];
+
+async function ipGeolocate(): Promise<CityOption> {
+  try {
+    const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(4000) });
+    const data = await res.json();
+    if (data.latitude && data.longitude) {
+      return findNearestCity(data.latitude, data.longitude);
+    }
+  } catch {
+    // ignore
+  }
+
+  // Try backup IP geolocation
+  try {
+    const res = await fetch("https://ip-api.com/json/?fields=lat,lon", { signal: AbortSignal.timeout(4000) });
+    const data = await res.json();
+    if (data.lat && data.lon) {
+      return findNearestCity(data.lat, data.lon);
+    }
+  } catch {
+    // ignore
+  }
+
+  return DEFAULT_CITY;
+}
+
 // Hook to detect user's location and return a default city
 export function useUserLocation(): {
   detectedCity: CityOption | null;
@@ -33,56 +60,42 @@ export function useUserLocation(): {
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      // Fallback: use IP-based geolocation
-      fetch("https://ipapi.co/json/")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.latitude && data.longitude) {
-            const coords = { lat: data.latitude, lon: data.longitude };
+    let cancelled = false;
+
+    async function detect() {
+      // Try browser geolocation first
+      if (navigator.geolocation) {
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 5000,
+              enableHighAccuracy: false,
+            });
+          });
+          if (!cancelled) {
+            const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
             setUserCoords(coords);
-            const city = findNearestCity(coords.lat, coords.lon);
-            setDetectedCity(city);
-          } else {
-            setDetectedCity(ALL_CITIES.find(c => c.name === "New York") || ALL_CITIES[0]);
+            setDetectedCity(findNearestCity(coords.lat, coords.lon));
+            setDetecting(false);
+            return;
           }
-        })
-        .catch(() => {
-          setDetectedCity(ALL_CITIES.find(c => c.name === "New York") || ALL_CITIES[0]);
-        })
-        .finally(() => setDetecting(false));
-      return;
+        } catch {
+          // Geolocation denied or timed out, fall through to IP
+        }
+      }
+
+      // Fallback to IP geolocation
+      if (!cancelled) {
+        const city = await ipGeolocate();
+        if (!cancelled) {
+          setDetectedCity(city);
+          setDetecting(false);
+        }
+      }
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        setUserCoords(coords);
-        const city = findNearestCity(coords.lat, coords.lon);
-        setDetectedCity(city);
-        setDetecting(false);
-      },
-      () => {
-        // Permission denied or error — try IP geolocation
-        fetch("https://ipapi.co/json/")
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.latitude && data.longitude) {
-              const coords = { lat: data.latitude, lon: data.longitude };
-              setUserCoords(coords);
-              const city = findNearestCity(coords.lat, coords.lon);
-              setDetectedCity(city);
-            } else {
-              setDetectedCity(ALL_CITIES.find(c => c.name === "New York") || ALL_CITIES[0]);
-            }
-          })
-          .catch(() => {
-            setDetectedCity(ALL_CITIES.find(c => c.name === "New York") || ALL_CITIES[0]);
-          })
-          .finally(() => setDetecting(false));
-      },
-      { timeout: 5000, enableHighAccuracy: false }
-    );
+    detect();
+    return () => { cancelled = true; };
   }, []);
 
   return { detectedCity, detecting, userCoords };
