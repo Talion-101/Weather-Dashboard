@@ -34,35 +34,33 @@
                     </svg>
                     Weather Dashboard
                 </h1>
-                <div class="current-time" id="currentTime">--:--:--</div>
+                <div class="header-right">
+                    <div class="current-time" id="currentTime">--:--:--</div>
+                    <div class="search-container">
+                        <div class="search-box">
+                            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21l-4.35-4.35"/>
+                            </svg>
+                            <input 
+                                type="text" 
+                                id="citySearch" 
+                                class="search-input" 
+                                placeholder="Search city..."
+                                autocomplete="off"
+                                aria-label="Search for a city"
+                            >
+                            <button class="search-btn" id="searchBtn" aria-label="Search">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="search-results" id="searchResults"></div>
+                    </div>
+                </div>
             </div>
         </header>
-
-        <!-- Search Section -->
-        <section class="search-section">
-            <div class="search-container">
-                <div class="search-box">
-                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21l-4.35-4.35"/>
-                    </svg>
-                    <input 
-                        type="text" 
-                        id="citySearch" 
-                        class="search-input" 
-                        placeholder="Search for a city..."
-                        autocomplete="off"
-                        aria-label="Search for a city"
-                    >
-                    <button class="search-btn" id="searchBtn" aria-label="Search">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="search-results" id="searchResults"></div>
-            </div>
-        </section>
 
         <!-- Loading State -->
         <div class="loading-state" id="loadingState">
