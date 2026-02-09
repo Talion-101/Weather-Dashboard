@@ -129,8 +129,11 @@ const UI = {
      */
     startClock() {
         this.updateTime();
+        this.updateLocalTime();
         this.timeInterval = setInterval(() => {
             this.updateTime();
+            this.updateLocalTime();
+            this.checkThemeUpdate();
         }, 1000);
     },
 
@@ -145,6 +148,40 @@ const UI = {
             second: '2-digit',
             hour12: true
         });
+    },
+
+    /**
+     * Check and update theme based on current time in selected city
+     */
+    checkThemeUpdate() {
+        if (Weather.currentData && Weather.currentData.sunrise && Weather.currentData.sunset && Weather.currentData.timezone) {
+            const now = new Date();
+            const timezone = Weather.currentData.timezone;
+            
+            // Format current time in the location's timezone
+            const nowInTimezone = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+            
+            // Get sunrise and sunset times
+            const sunrise = new Date(Weather.currentData.sunrise);
+            const sunset = new Date(Weather.currentData.sunset);
+            
+            // Compare only the time portion (hours and minutes)
+            const nowHours = nowInTimezone.getHours();
+            const nowMinutes = nowInTimezone.getMinutes();
+            const sunriseHours = sunrise.getHours();
+            const sunriseMinutes = sunrise.getMinutes();
+            const sunsetHours = sunset.getHours();
+            const sunsetMinutes = sunset.getMinutes();
+            
+            // Convert to minutes for easier comparison
+            const nowTotalMinutes = nowHours * 60 + nowMinutes;
+            const sunriseTotalMinutes = sunriseHours * 60 + sunriseMinutes;
+            const sunsetTotalMinutes = sunsetHours * 60 + sunsetMinutes;
+            
+            // Check if it's day or night in the selected city's timezone
+            const isDay = nowTotalMinutes >= sunriseTotalMinutes && nowTotalMinutes <= sunsetTotalMinutes;
+            this.updateTheme(isDay);
+        }
     },
 
     /**
@@ -259,6 +296,8 @@ const UI = {
                 hour12: true
             };
             this.elements.localTime.textContent = now.toLocaleTimeString('en-US', options);
+        } else {
+            this.elements.localTime.textContent = '--:--';
         }
     },
 

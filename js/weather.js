@@ -172,11 +172,31 @@ const Weather = {
             return true;
         }
         
+        // Get current time in the location's timezone
         const now = new Date();
+        const timezone = data.timezone || 'UTC';
+        
+        // Format current time in the location's timezone
+        const nowInTimezone = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+        
+        // Get sunrise and sunset times (they're already in the correct timezone from API)
         const sunrise = new Date(data.daily.sunrise[0]);
         const sunset = new Date(data.daily.sunset[0]);
         
-        return now >= sunrise && now <= sunset;
+        // Compare only the time portion (hours and minutes)
+        const nowHours = nowInTimezone.getHours();
+        const nowMinutes = nowInTimezone.getMinutes();
+        const sunriseHours = sunrise.getHours();
+        const sunriseMinutes = sunrise.getMinutes();
+        const sunsetHours = sunset.getHours();
+        const sunsetMinutes = sunset.getMinutes();
+        
+        // Convert to minutes for easier comparison
+        const nowTotalMinutes = nowHours * 60 + nowMinutes;
+        const sunriseTotalMinutes = sunriseHours * 60 + sunriseMinutes;
+        const sunsetTotalMinutes = sunsetHours * 60 + sunsetMinutes;
+        
+        return nowTotalMinutes >= sunriseTotalMinutes && nowTotalMinutes <= sunsetTotalMinutes;
     },
 
     /**
